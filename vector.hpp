@@ -84,7 +84,7 @@ namespace ft {
 		const T* data() const { return array; }
 
 		//ITERATORS
-
+		
 	private:
 		size_type size;
 		size_type capacity;
