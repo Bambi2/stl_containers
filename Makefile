@@ -2,7 +2,7 @@ NAME = containers
 
 CLASSES = 
 
-SRCS = $(addsuffix .cpp, $(CLASSES)) main.cpp
+SRCS = $(addsuffix .cpp, $(CLASSES)) src/main.cpp
 
 OBJS = $(SRCS:%.cpp=%.o)
 
