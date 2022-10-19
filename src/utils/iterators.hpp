@@ -1,6 +1,7 @@
 #ifndef ITERATORS_HPP
 #define ITERATORS_HPP
 
+#include <iterator>
 #include "utils.hpp"
 
 namespace ft {
@@ -52,6 +53,90 @@ namespace ft {
 		typedef const T* pointer;
 		typedef const T& reference;
 		typedef random_access_iterator_tag iterator_category;
+	};
+
+	//RANDOM ACCESS ITERATOR
+	template< class T >
+	class random_access_iterator : public iterator<std::random_access_iterator_tag, T> {
+	public:
+		random_access_iterator() : ptr(NULL) {}
+
+		random_access_iterator(T* ptr) : ptr(ptr) {}
+
+		random_access_iterator(const random_access_iterator& other) : ptr(other.ptr) {}
+
+		~random_access_iterator() {}
+
+		random_access_iterator& operator=(const random_access_iterator& other) {
+			if (this != &other) {
+				ptr = other.ptr;
+			}
+			return *this;
+		}
+
+		T* base() { return ptr; }
+
+		T& operator*() { return *ptr; }
+
+		T* operator->() { return ptr; }
+
+		random_access_iterator& operator++() { ++ptr; return *this; }
+
+		random_access_iterator operator++(int) {
+			random_access_iterator temp(ptr++);
+			return temp;
+		}
+
+		random_access_iterator& operator--() { --ptr; return *this; }
+
+		random_access_iterator operator--(int) {
+			random_access_iterator temp(ptr--);
+			return temp;
+		}
+
+		random_access_iterator& operator+=(difference_type n) {
+			ptr += n;
+			return *this;
+		}
+
+		random_access_iterator& operator-=(difference_type n) {
+			ptr -= n;
+			return *this;
+		}
+
+		random_access_iterator operator+(difference_type n) const {
+			random_access_iterator temp(ptr + n);
+			return temp;
+		}
+
+		random_access_iterator operator-(difference_type n) const {
+			random_access_iterator temp(ptr - n);
+			return temp;
+		}
+
+		difference_type operator-(const random_access_iterator& other) const { return ptr - other.ptr; }
+
+		T& operator[](difference_type n) { return *(ptr + n); }
+
+		bool operator==(const random_access_iterator& other) { return ptr == other.ptr; }
+		
+		bool operator!=(const random_access_iterator& other) { return ptr != other.ptr; }
+
+		bool operator<(const random_access_iterator& other) { return ptr < other.ptr; }
+
+		bool operator>(const random_access_iterator& other) { return ptr > other.ptr; }
+
+		bool operator>=(const random_access_iterator& other) { return ptr >= other.ptr; }
+
+		bool operator<=(const random_access_iterator& other) { return ptr <= other.ptr; }
+
+		//cause we also want to be able to make addition like 'n + iterator', not only 'iterator + n'
+		friend iterator operator+(difference_type n, const random_access_iterator& rhs) {
+			random_access_iterator temp(n + rhs.base());
+			return temp;
+		}
+	private:
+		T* ptr;
 	};
 
 	//REVERSE ITERATOR

@@ -19,8 +19,8 @@ namespace ft {
 		typedef const value_type& const_reference;
 		typedef typename Allocator::pointer pointer;
 		typedef typename Allocator::const_pointer const_pointer;
-		class iterator;
-		class const_iterator;
+		typedef ft::random_access_iterator<T> iterator;
+		typedef ft::random_access_iterator<const T> const_iterator;
 		typedef ft::reverse_iterator<iterator> reverse_iterator;
 		typedef ft::reverse_iterator<const_iterator> const_reverse_iterator;
 
@@ -83,7 +83,42 @@ namespace ft {
 		const T* data() const { return array; }
 
 		//ITERATORS
-		iterator begin();
+		iterator begin() { return iterator(array); }
+
+		const_iterator begin() const { return const_iterator(array + size); }
+
+		iterator end() { return iterator(array); }
+
+		const_iterator end() const { return const_iterator(array + size); }
+
+		reverse_iterator rbegin() { return reverse_iterator(end()); }
+
+		const_reverse_iterator rbegin() const { return const_reverse_iterator(end()); }
+
+		reverse_iterator rend() { return reverse_iterator(begin()); }
+
+		const_reverse_iterator rend() const { return const_reverse_iterator(begin()); }
+
+		//CAPACITY
+		bool empty() const { return begin() == end(); }
+
+		size_type size() const { return size; }
+
+		size_type max_size() const { return alloc.max_size(); }
+
+		size_type capacity() const { return capacity; }
+
+		void reserve(size_type new_cap);
+
+		//MODIFIERS
+		void clear() {
+			for (int i = 0; i < size; i++) {
+				alloc.destroy(array + i);
+			}
+			size = 0;
+		}
+
+		iterator insert(const_iterator pos, const T& value);
 	private:
 		size_type size;
 		size_type capacity;
@@ -249,7 +284,7 @@ namespace ft {
 		}
 	}
 
-	template< class T, class Allocator>
+	template< class T, class Allocator >
 	template< class InputIt >
 	void vector<T, Allocator>::assign(typename enable_if<!is_integral<InputIt>::value, InputIt>::type first, InputIt last) {
 		size_type count = std::distance(first, last);
@@ -298,85 +333,83 @@ namespace ft {
 	}
 
 	template< class T, class Allocator >
-	class vector<T, Allocator>::iterator : public iterator<std::random_access_iterator_tag, T> {
-	public:
-		iterator() : ptr(NULL) {}
+	void vector<T, Allocator>::reserve(size_type new_cap) {
+		if (new_cap > capacity) {
+				if (new_cap > max_size()) {
+					throw std::length_error("vector");
+				}
+				vector<T, Allocator> temp(new_cap);
+				try {
+					temp.assign(this->begin(), this->end());
+				} catch (...) {
+					temp.free_array();
+					throw ;
+				}
+				this->free_array();
+				*this = temp;
+		}
+	}
 
-		iterator(T* ptr) : ptr(ptr) {}
-
-		iterator(const iterator& other) : ptr(other.ptr) {}
-
-		~iterator() {}
-
-		iterator& operator=(const iterator& other) {
-			if (this != &other) {
-				ptr = other.ptr;
+	template< class T, class Allocator >
+	typename vector<T, Allocator>::iterator vector<T, Allocator>::insert(typename vector<T, Allocator>::const_iterator pos, const T& value) {
+		size_type index = pos - this->begin();
+		if (size + 1 < capacity) {
+			size_type new_cap = (size + 1) * 2;
+			T* temp = alloc.allocate(new_cap);
+			size_type i = 0;
+			try {
+				for (; i < index; ++i) {
+					alloc.construct(temp + i, array[i]);
+				}
+				alloc.construct(temp + index, value);
+				for(i = index + 1; i < size + 1; ++i) {
+					alloc.construct(temp + i, array[i - 1]);
+				}
+			} catch (...) {
+				--i;
+				while (i >= 0) {
+					alloc.destroy(temp + i,)
+				}
+				alloc.deallocate(temp, new_cap);
+				throw ;
 			}
-			return *this;
+			this->free_array();
+			this->capacity = new_cap;
+			this->array = temp;
+		} else {
+			size_type i = size - 1;
+			alloc.construct(array + size, array[size - 1]);
+			try {
+				for (; i > index; --i) {
+					alloc.construct(array + i, array[i - 1]);
+				}
+			} catch(...) {
+				for (size_type j = 0; j < i; ++j) {
+					alloc.destroy(array + j);
+				}
+				for (size_type j = i + 1; i < size + 1; ++j) {
+					alloc.destroy(array + j);
+				}
+				size = 0;
+				throw ;
+			}
+			try {
+				alloc.construct(array + index, value);
+			} catch (...) {
+				for (size_type j = 0; j < index; ++j) {
+					alloc.destroy(array + j);
+				}
+				for (size_type j = index + 1; j < size + 1; ++j) {
+					alloc.destroy(array + j);
+				}
+				size = 0;
+				throw ;
+			}
 		}
+		this->size++;
+		return this->begin() + index;
+	}
 
-		T* base() { return ptr; }
-
-		T& operator*() { return *ptr; }
-
-		T* operator->() { return ptr; }
-
-		iterator& operator++() { ++ptr; return *this; }
-
-		iterator operator++(int) {
-			iterator temp(ptr++);
-			return temp;
-		}
-
-		iterator& operator--() { --ptr; return *this; }
-
-		iterator operator--(int) {
-			iterator temp(ptr--);
-			return temp;
-		}
-
-		iterator& operator+=(difference_type n) {
-			ptr += n;
-			return *this;
-		}
-
-		iterator& operator-=(difference_type n) {
-			ptr -= n;
-			return *this;
-		}
-
-		iterator operator+(difference_type n) const {
-			iterator temp(ptr + n);
-			return temp;
-		}
-
-		iterator operator-(difference_type n) const {
-			iterator temp(ptr - n);
-			return temp;
-		}
-
-		T& operator[](difference_type n) { return *(ptr + n); }
-
-		bool operator==(const iterator& other) { return ptr == other.ptr; }
-		
-		bool operator!=(const iterator& other) { return ptr != other.ptr; }
-
-		bool operator<(const iterator& other) { return ptr < other.ptr; }
-
-		bool operator>(const iterator& other) { return ptr > other.ptr; }
-
-		bool operator>=(const iterator& other) { return ptr >= other.ptr; }
-
-		bool operator<=(const iterator& other) { return ptr <= other.ptr; }
-
-		//cause we also want to be able to make addition like 'n + iterator', not only 'iterator + n'
-		friend typename vector<T, Allocator>::iterator operator+(difference_type n, const typename vector<T, Allocator>::iterator& rhs) {
-			iterator temp(n + rhs.base());
-			return temp;
-		}
-	private:
-		T* ptr;
-	};
 }
 
 
